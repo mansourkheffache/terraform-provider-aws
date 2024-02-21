@@ -107,51 +107,6 @@ func TestAccAMPWorkspace_kms(t *testing.T) {
 	})
 }
 
-func TestAccAMPWorkspace_tags(t *testing.T) {
-	ctx := acctest.Context(t)
-	var v types.WorkspaceDescription
-	resourceName := "aws_prometheus_workspace.test"
-
-	resource.ParallelTest(t, resource.TestCase{
-		PreCheck:                 func() { acctest.PreCheck(ctx, t) },
-		ErrorCheck:               acctest.ErrorCheck(t, names.AMPServiceID),
-		ProtoV5ProviderFactories: acctest.ProtoV5ProviderFactories,
-		CheckDestroy:             testAccCheckWorkspaceDestroy(ctx),
-		Steps: []resource.TestStep{
-			{
-				Config: testAccWorkspaceConfig_tags1("key1", "value1"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWorkspaceExists(ctx, resourceName, &v),
-					resource.TestCheckResourceAttr(resourceName, "tags.%", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.key1", "value1"),
-				),
-			},
-			{
-				ResourceName:      resourceName,
-				ImportState:       true,
-				ImportStateVerify: true,
-			},
-			{
-				Config: testAccWorkspaceConfig_tags2("key1", "value1updated", "key2", "value2"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWorkspaceExists(ctx, resourceName, &v),
-					resource.TestCheckResourceAttr(resourceName, "tags.%", "2"),
-					resource.TestCheckResourceAttr(resourceName, "tags.key1", "value1updated"),
-					resource.TestCheckResourceAttr(resourceName, "tags.key2", "value2"),
-				),
-			},
-			{
-				Config: testAccWorkspaceConfig_tags1("key2", "value2"),
-				Check: resource.ComposeTestCheckFunc(
-					testAccCheckWorkspaceExists(ctx, resourceName, &v),
-					resource.TestCheckResourceAttr(resourceName, "tags.%", "1"),
-					resource.TestCheckResourceAttr(resourceName, "tags.key2", "value2"),
-				),
-			},
-		},
-	})
-}
-
 func TestAccAMPWorkspace_alias(t *testing.T) {
 	ctx := acctest.Context(t)
 	var v1, v2, v3, v4 types.WorkspaceDescription
@@ -333,7 +288,13 @@ resource "aws_prometheus_workspace" "test" {}
 `
 }
 
-func testAccWorkspaceConfig_tags1(tagKey1, tagValue1 string) string {
+func testAccWorkspaceConfig_tags0(_ string) string {
+	return `
+resource "aws_prometheus_workspace" "test" {}
+`
+}
+
+func testAccWorkspaceConfig_tags1(_, tagKey1, tagValue1 string) string {
 	return fmt.Sprintf(`
 resource "aws_prometheus_workspace" "test" {
   tags = {
@@ -343,7 +304,7 @@ resource "aws_prometheus_workspace" "test" {
 `, tagKey1, tagValue1)
 }
 
-func testAccWorkspaceConfig_tags2(tagKey1, tagValue1, tagKey2, tagValue2 string) string {
+func testAccWorkspaceConfig_tags2(_, tagKey1, tagValue1, tagKey2, tagValue2 string) string {
 	return fmt.Sprintf(`
 resource "aws_prometheus_workspace" "test" {
   tags = {
@@ -352,6 +313,16 @@ resource "aws_prometheus_workspace" "test" {
   }
 }
 `, tagKey1, tagValue1, tagKey2, tagValue2)
+}
+
+func testAccWorkspaceConfig_tagsNull(_, tagKey1 string) string {
+	return fmt.Sprintf(`
+resource "aws_prometheus_workspace" "test" {
+  tags = {
+    %[1]q = null
+  }
+}
+`, tagKey1)
 }
 
 func testAccWorkspaceConfig_alias(rName string) string {
